@@ -1,13 +1,15 @@
+# Import Libraries:
 import pandas as pd
 import numpy as np
 import os
-try:
+try: #Prevent the casting of an error message if the library is imported outside Kaggle/Colab
     from google.colab import drive
     COLAB_AVAILABLE = True
 except ImportError:
     COLAB_AVAILABLE = False
 
-def mount_drive(competition_name:str=""):
+##################### FUNCTIONS ##################### 
+def mount_drive(competition_name:str="", tp:str="/gdrive/MyDrive/Exercises/Studies_Structured_Data/Data/"):
   """
     Changes the current working directory to the specified path.
     Args:
@@ -16,11 +18,30 @@ def mount_drive(competition_name:str=""):
   
   if not COLAB_AVAILABLE:
         print("Google Colab environment not detected. Skipping drive mount.")
+        target_path = rf"{tp}{competition_name}"
+    
+        try:
+            # Step 1: Display the directory before the change
+            print(f"Current directory before change: {os.getcwd()}")
+          
+            # Step 2: Change the working directory
+            os.chdir(target_path)
+          
+            # Step 3: Display the directory after the change
+            print(f"New working directory: {os.getcwd()}")
+          
+        except FileNotFoundError:
+            print(f"Error: The system cannot find the path specified: '{target_path}'")
+        except PermissionError:
+            print(f"Error: You do not have permission to access: '{target_path}'")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+      
         return
   
   drive.mount(r'/gdrive')
 
-  target_path = rf"/gdrive/MyDrive/Exercises/Studies_Structured_Data/Data/{competition_name}"
+  target_path = rf"{tp}{competition_name}"
 
   try:
       # Step 1: Display the directory before the change
