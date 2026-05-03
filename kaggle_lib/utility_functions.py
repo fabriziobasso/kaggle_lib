@@ -1,7 +1,11 @@
 import pandas as pd
 import numpy as np
 import os
-from google.colab import drive
+try:
+    from google.colab import drive
+    COLAB_AVAILABLE = True
+except ImportError:
+    COLAB_AVAILABLE = False
 
 def mount_drive(competition_name:str=""):
   """
@@ -9,7 +13,11 @@ def mount_drive(competition_name:str=""):
     Args:
         target_path (str): The folder path you want to move into.
   """
-
+  
+  if not COLAB_AVAILABLE:
+        print("Google Colab environment not detected. Skipping drive mount.")
+        return
+  
   drive.mount(r'/gdrive')
 
   target_path = rf"/gdrive/MyDrive/Exercises/Studies_Structured_Data/Data/{competition_name}"
