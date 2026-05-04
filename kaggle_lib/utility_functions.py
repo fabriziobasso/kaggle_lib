@@ -198,6 +198,15 @@ def plot_categorical_percentages(df, features, hue_var):
         axes[i].set_ylabel("Percentage (%)")
         axes[i].set_xlabel(feature)
 
+        # --- Visual Styling Start ---    
+        # Add horizontal grid lines with dashed format
+        axes[i].grid(axis='y', linestyle='--', alpha=0.7)
+        # Ensure grid lines are drawn behind the bars
+        axes[i].set_axisbelow(True)
+        # Remove top and right spines
+        sns.despine(ax=axes[i], top=True, right=True)
+        # --- Visual Styling End ---
+
     # 4. Cleanup: Remove unused subplots
     for j in range(i + 1, len(axes)):
         fig.delaxes(axes[j])
@@ -242,6 +251,15 @@ def plot_categorical_percentages_hist(df, features, hue_var):
         axes[i].set_title(f"Percentage Distribution: {feature} by {hue_var}", fontsize=14)
         axes[i].set_ylabel("Percentage (%)")
         axes[i].set_xlabel(feature)
+
+        # --- Visual Styling Start ---    
+        # Add horizontal grid lines with dashed format
+        axes[i].grid(axis='y', linestyle='--', alpha=0.7)
+        # Ensure grid lines are drawn behind the bars
+        axes[i].set_axisbelow(True)
+        # Remove top and right spines
+        sns.despine(ax=axes[i], top=True, right=True)
+        # --- Visual Styling End ---
 
     # 4. Remove empty subplots
     for j in range(i + 1, len(axes)):
