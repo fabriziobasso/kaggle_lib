@@ -9,6 +9,7 @@ except ImportError:
     COLAB_AVAILABLE = False
 
 ##################### FUNCTIONS ##################### 
+# Connect to gdrive
 def mount_drive(competition_name:str="", tp:str="/gdrive/MyDrive/Exercises/Studies_Structured_Data/Data/"):
   """
     Changes the current working directory to the specified path.
@@ -60,7 +61,7 @@ def mount_drive(competition_name:str="", tp:str="/gdrive/MyDrive/Exercises/Studi
   except Exception as e:
       print(f"An unexpected error occurred: {e}")
 
-def import_files(original_data:str="", mute=False):
+def import_files(original_data:str="", datatypes: dict={}, mute=False):
   
   """
   import files from drive:
@@ -71,10 +72,10 @@ def import_files(original_data:str="", mute=False):
   submission=pd.read_csv("sample_submission.csv")
   """
 
-  train=pd.read_csv("train.csv", index_col=0)
-  test=pd.read_csv("test.csv", index_col=0)
+  train=pd.read_csv("train.csv", index_col=0, dtype=datatypes)
+  test=pd.read_csv("test.csv", index_col=0, dtype=datatypes)
   if original_data!="":
-    orig_data=pd.read_csv(original_data)
+    orig_data=pd.read_csv(original_data, dtype=datatypes)
   
   submission=pd.read_csv("sample_submission.csv", index_col=0)
   print(f"Train shape: {train.shape}")
@@ -112,3 +113,64 @@ def concatenate_train_original(train, orig_data):
   orig_data["Source"] = "Original"
 
   return pd.concat([train, orig_data], ignore_index=True)
+
+def get_optimal_dtypes(file_path, nrows=1000):
+    """
+    Analyzes a sample of a dataset to determine memory-efficient datatypes.
+    
+    Args:
+        file_path (str): Path to the CSV or Excel file.
+        nrows (int): Number of rows to sample for analysis.
+        
+    Returns:
+        dict: A mapping of column names to their recommended pandas dtypes.
+    """
+    # Step 1: Ingest the sample
+    if file_path.endswith('.csv'):
+        df = pd.read_csv(file_path, nrows=nrows)
+    elif file_path.endswith(('.xls', '.xlsx')):
+        df = pd.read_excel(file_path, nrows=nrows)
+    else:
+        raise ValueError("Unsupported file format. Please use CSV or Excel.")
+
+    optimal_dtypes = {}
+
+    for col in df.columns:
+        series = df[col]
+        
+        # Handle Numeric types
+        if pd.api.types.is_numeric_dtype(series):
+            if pd.api.types.is_float_dtype(series):
+                # Standardize to float32 for NN performance/memory
+                optimal_dtypes[col] = 'float32'
+            else:
+                # Find the smallest integer type that fits the range
+                c_min = series.min()
+                c_max = series.max()
+                
+                if c_min >= 0:
+                    if c_max < 255: optimal_dtypes[col] = 'uint8'
+                    elif c_max < 65535: optimal_dtypes[col] = 'uint16'
+                    else: optimal_dtypes[col] = 'uint32'
+                else:
+                    if c_min > -128 and c_max < 127: optimal_dtypes[col] = 'int8'
+                    elif c_min > -32768 and c_max < 32767: optimal_dtypes[col] = 'int16'
+                    else: optimal_dtypes[col] = 'int32'
+        
+        # Handle Object/String types
+        elif pd.api.types.is_object_dtype(series):
+            num_unique = series.nunique()
+            num_total = len(series)
+            
+            # Detect Binary (Yes/No, True/False)
+            if num_unique == 2:
+                optimal_dtypes[col] = 'int8' # Safer for math than bool or uint8
+            
+            # Detect Categorical (Threshold: unique values < 50% of sample)
+            elif num_unique / num_total < 0.5:
+                optimal_dtypes[col] = 'category'
+            
+            else:
+                optimal_dtypes[col] = 'object'
+                
+    return optimal_dtypes
