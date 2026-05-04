@@ -127,9 +127,9 @@ def get_optimal_dtypes(file_path, nrows=1000):
     """
     # Step 1: Ingest the sample
     if file_path.endswith('.csv'):
-        df = pd.read_csv(file_path, nrows=nrows)
+        sample = pd.read_csv(file_path, nrows=nrows)
     elif file_path.endswith(('.xls', '.xlsx')):
-        df = pd.read_excel(file_path, nrows=nrows)
+        sample = pd.read_excel(file_path, nrows=nrows)
     else:
         raise ValueError("Unsupported file format. Please use CSV or Excel.")
 
