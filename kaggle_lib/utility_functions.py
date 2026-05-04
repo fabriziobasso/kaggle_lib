@@ -65,7 +65,8 @@ def mount_drive(competition_name:str="", tp:str="/gdrive/MyDrive/Exercises/Studi
   except Exception as e:
       print(f"An unexpected error occurred: {e}")
 
-def import_files(original_data:str="", datatypes: dict={}, mute=False):
+def import_files(original_data:str="", datatypes: dict={}, mute=False, 
+                 trn:str="train.csv", tst:str="test.csv", sub:str="sample_submission.csv"):
   
   """
   import files from drive:
@@ -76,12 +77,13 @@ def import_files(original_data:str="", datatypes: dict={}, mute=False):
   submission=pd.read_csv("sample_submission.csv")
   """
 
-  train=pd.read_csv("train.csv", index_col=0, dtype=datatypes)
-  test=pd.read_csv("test.csv", index_col=0, dtype=datatypes)
+  train=pd.read_csv(trn, index_col=0, dtype=datatypes)
+  test=pd.read_csv(tst, index_col=0, dtype=datatypes)
   if original_data!="":
     orig_data=pd.read_csv(original_data, dtype=datatypes)
   
-  submission=pd.read_csv("sample_submission.csv", index_col=0)
+  submission=pd.read_csv(sub, index_col=0)
+                     
   print(f"Train shape: {train.shape}")
   print(f"Test shape: {test.shape}")
   print(f"Submission shape: {submission.shape}")
