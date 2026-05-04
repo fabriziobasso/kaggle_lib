@@ -175,7 +175,7 @@ def plot_categorical_percentages(df, features, hue_var):
     rows = math.ceil(num_features / cols)
     
     # 2. Initialize Figure
-    fig, axes = plt.subplots(rows, cols, figsize=(14, 6 * rows))
+    fig, axes = plt.subplots(rows, cols, figsize=(14, 5 * rows))
     
     # Ensure axes is an array even for a single plot
     if num_features == 1:
@@ -216,7 +216,7 @@ def plot_categorical_percentages_hist(df, features, hue_var):
     rows = math.ceil(num_features / cols)
     
     # 2. Initialize the Figure
-    fig, axes = plt.subplots(rows, cols, figsize=(16, 6 * rows))
+    fig, axes = plt.subplots(rows, cols, figsize=(14, 5 * rows))
     
     # Flatten axes for easy iteration (handles single or multiple plots)
     if num_features == 1:
