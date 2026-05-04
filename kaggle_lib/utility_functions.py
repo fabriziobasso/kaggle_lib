@@ -190,7 +190,6 @@ def plot_categorical_percentages(df, features, hue_var):
             x=feature, 
             hue=hue_var, 
             stat="percent",      # Automatically converts counts to percent
-            common_norm=False,   # Normalizes within each category group
             ax=axes[i]
         )
         
@@ -200,6 +199,51 @@ def plot_categorical_percentages(df, features, hue_var):
         axes[i].set_xlabel(feature)
 
     # 4. Cleanup: Remove unused subplots
+    for j in range(i + 1, len(axes)):
+        fig.delaxes(axes[j])
+        
+    plt.tight_layout()
+    plt.show()
+
+def plot_categorical_percentages_hist(df, features, hue_var):
+    """
+    Creates a grid of grouped bar charts showing percentages.
+    Uses sns.histplot to support common_norm on categorical data.
+    """
+    # 1. Determine Grid Layout
+    num_features = len(features)
+    cols = 2
+    rows = math.ceil(num_features / cols)
+    
+    # 2. Initialize the Figure
+    fig, axes = plt.subplots(rows, cols, figsize=(16, 6 * rows))
+    
+    # Flatten axes for easy iteration (handles single or multiple plots)
+    if num_features == 1:
+        axes = [axes]
+    else:
+        axes = axes.flatten()
+        
+    # 3. Plotting Loop
+    for i, feature in enumerate(features):
+        sns.histplot(
+            data=df,
+            x=feature,
+            hue=hue_var,
+            stat="percent",
+            common_norm=False,  # This now works in histplot
+            multiple="dodge",   # Makes it a grouped bar chart
+            discrete=True,      # Required for categorical/discrete x-axis
+            shrink=0.8,         # Adds spacing between bar groups
+            ax=axes[i]
+        )
+        
+        # Formatting titles and labels
+        axes[i].set_title(f"Percentage Distribution: {feature} by {hue_var}", fontsize=14)
+        axes[i].set_ylabel("Percentage (%)")
+        axes[i].set_xlabel(feature)
+
+    # 4. Remove empty subplots
     for j in range(i + 1, len(axes)):
         fig.delaxes(axes[j])
         
