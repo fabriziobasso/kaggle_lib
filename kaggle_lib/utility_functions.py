@@ -2,6 +2,10 @@
 import pandas as pd
 import numpy as np
 import os
+import matplotlib.pyplot as plt
+import seaborn as sns
+import math
+
 try: #Prevent the casting of an error message if the library is imported outside Kaggle/Colab
     from google.colab import drive
     COLAB_AVAILABLE = True
@@ -158,3 +162,46 @@ def get_optimal_dtypes(file_path, nrows=1000):
             optimal_dtypes[col] = 'category'
                 
     return optimal_dtypes
+
+# Graph Categorical in countplot
+def plot_categorical_percentages(df, features, hue_var):
+    """
+    Creates a grid of grouped bar charts showing percentages.
+    Requires Seaborn v0.13.0 or higher.
+    """
+    # 1. Grid Configuration
+    num_features = len(features)
+    cols = 2
+    rows = math.ceil(num_features / cols)
+    
+    # 2. Initialize Figure
+    fig, axes = plt.subplots(rows, cols, figsize=(14, 6 * rows))
+    
+    # Ensure axes is an array even for a single plot
+    if num_features == 1:
+        axes = [axes]
+    else:
+        axes = axes.flatten()
+        
+    # 3. Plotting Loop
+    for i, feature in enumerate(features):
+        sns.countplot(
+            data=df, 
+            x=feature, 
+            hue=hue_var, 
+            stat="percent",      # Automatically converts counts to percent
+            common_norm=False,   # Normalizes within each category group
+            ax=axes[i]
+        )
+        
+        # Formatting titles and labels
+        axes[i].set_title(f"Distribution of {feature} by {hue_var}", fontsize=14)
+        axes[i].set_ylabel("Percentage (%)")
+        axes[i].set_xlabel(feature)
+
+    # 4. Cleanup: Remove unused subplots
+    for j in range(i + 1, len(axes)):
+        fig.delaxes(axes[j])
+        
+    plt.tight_layout()
+    plt.show()
