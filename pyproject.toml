@@ -10,6 +10,8 @@ authors = [{name = "Fabrizio Basso"}]
 dependencies = [
     "pandas",
     "numpy",
+    "matplotlib",
+    "seaborn>=0.13.0",
 ]
 
 [tool.setuptools]
