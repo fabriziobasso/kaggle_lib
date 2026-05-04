@@ -135,42 +135,26 @@ def get_optimal_dtypes(file_path, nrows=1000):
 
     optimal_dtypes = {}
 
-    for col in df.columns:
-        series = df[col]
-        
-        # Handle Numeric types
-        if pd.api.types.is_numeric_dtype(series):
-            if pd.api.types.is_float_dtype(series):
-                # Standardize to float32 for NN performance/memory
+    for col in sample.columns:
+        # Check if the column is purely numeric
+        if pd.api.types.is_numeric_dtype(sample[col]):
+            if pd.api.types.is_float_dtype(sample[col]):
                 optimal_dtypes[col] = 'float32'
             else:
-                # Find the smallest integer type that fits the range
-                c_min = series.min()
-                c_max = series.max()
-                
+                # Downcast integers based on min/max
+                c_min, c_max = sample[col].min(), sample[col].max()
                 if c_min >= 0:
                     if c_max < 255: optimal_dtypes[col] = 'uint8'
                     elif c_max < 65535: optimal_dtypes[col] = 'uint16'
                     else: optimal_dtypes[col] = 'uint32'
                 else:
                     if c_min > -128 and c_max < 127: optimal_dtypes[col] = 'int8'
-                    elif c_min > -32768 and c_max < 32767: optimal_dtypes[col] = 'int16'
                     else: optimal_dtypes[col] = 'int32'
         
-        # Handle Object/String types
-        elif pd.api.types.is_object_dtype(series):
-            num_unique = series.nunique()
-            num_total = len(series)
-            
-            # Detect Binary (Yes/No, True/False)
-            if num_unique == 2:
-                optimal_dtypes[col] = 'int8' # Safer for math than bool or uint8
-            
-            # Detect Categorical (Threshold: unique values < 50% of sample)
-            elif num_unique / num_total < 0.5:
-                optimal_dtypes[col] = 'category'
-            
-            else:
-                optimal_dtypes[col] = 'object'
+        # 2. Handle everything else (Strings/Objects)
+        else:
+            # We use 'category' for strings during ingestion. 
+            # This avoids casting errors and is very memory efficient.
+            optimal_dtypes[col] = 'category'
                 
     return optimal_dtypes
