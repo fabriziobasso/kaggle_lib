@@ -165,6 +165,32 @@ def get_optimal_dtypes(file_path, nrows=1000):
                 
     return optimal_dtypes
 
+#classify Features by datatypes:
+def classify_features_by_dtype(df):
+    """
+    Classifies the columns of a DataFrame based on their data types.
+    
+    Parameters:
+    df (pd.DataFrame): The input DataFrame to analyze.
+    
+    Returns:
+    dict: A dictionary where keys are data types (strings) and 
+          values are lists of column names belonging to that type.
+    """
+    # Initialize an empty dictionary to store our results
+    dtype_dict = {}
+    
+    # Iterate through each unique data type found in the DataFrame columns
+    for dtype in df.dtypes.unique():
+        # df.select_dtypes returns a subset of the DataFrame with the chosen type
+        # We then extract the column names as a list
+        columns = df.select_dtypes(include=[dtype]).columns.tolist()
+        
+        # Store the list in the dictionary using the string name of the dtype
+        dtype_dict[str(dtype)] = columns
+        
+    return dtype_dict
+
 # Graph Categorical in countplot
 def plot_categorical_percentages(df, features, hue_var):
     """
