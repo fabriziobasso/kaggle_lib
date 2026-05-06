@@ -4,6 +4,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.feature_selection import mutual_info_classif
 import math
 
 try: #Prevent the casting of an error message if the library is imported outside Kaggle/Colab
