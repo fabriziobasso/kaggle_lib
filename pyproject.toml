@@ -12,6 +12,7 @@ dependencies = [
     "numpy",
     "matplotlib",
     "seaborn>=0.13.0",
+    "scikit-learn",
 ]
 
 [tool.setuptools]
