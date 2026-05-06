@@ -5,6 +5,7 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.feature_selection import mutual_info_classif
+from sklearn.preprocessing import LabelEncoder
 import math
 
 try: #Prevent the casting of an error message if the library is imported outside Kaggle/Colab
@@ -296,3 +297,69 @@ def plot_categorical_percentages_hist(df, features, hue_var):
         
     plt.tight_layout()
     plt.show()
+
+# Mutual Inforamtion analysis
+def analyze_categorical_mi(df, features, target, random_state=42, graph=True):
+    """
+    Performs Mutual Information analysis on categorical features.
+    
+    Parameters:
+    - df: The Pandas DataFrame.
+    - features: List of strings (column names) to analyze.
+    - target: String, the name of the target classification column.
+    
+    Returns:
+    - mi_df: A DataFrame containing features and their MI scores.
+    """
+    
+    # 1. Create a copy to avoid modifying the original dataframe
+    X = df[features].copy()
+    y = df[target]
+    
+    # 2. Encode categorical features and target to integers
+    # mutual_info_classif requires numeric input, but we will 
+    # flag them as discrete.
+    le = LabelEncoder()
+    
+    for col in features:
+        X[col] = le.fit_transform(X[col].astype(str))
+        
+    if y.dtype == 'object' or str(y.dtype) == 'category':
+        y_encoded = le.fit_transform(y.astype(str))
+    else:
+        y_encoded = y
+
+    # 3. Calculate Mutual Information
+    # discrete_features=True is CRITICAL for purely categorical data
+    mi_scores = mutual_info_classif(
+        X, y_encoded, 
+        discrete_features=True, 
+        random_state=random_state
+    )
+    
+    # 4. Create the summary DataFrame
+    mi_df = pd.DataFrame({
+        'Feature': features,
+        'MI_Score': mi_scores
+    }).sort_values(by='MI_Score', ascending=False).reset_index(drop=True)
+    
+    # 5. Plot the results
+    if graph==True:
+        plt.figure(figsize=(10, 6))
+        sns.set_style("whitegrid")
+        sns.barplot(
+            x='MI_Score', 
+            y='Feature', 
+            data=mi_df, 
+            hue='Feature', 
+            palette='magma', 
+            legend=False
+        )
+        
+        plt.title(f'Mutual Information Scores (Target: {target})', fontsize=14)
+        plt.xlabel('Information Gain / MI Score', fontsize=12)
+        plt.ylabel('Features', fontsize=12)
+        plt.tight_layout()
+        plt.show()
+    
+    return mi_df
