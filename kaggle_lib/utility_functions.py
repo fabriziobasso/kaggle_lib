@@ -352,13 +352,15 @@ def analyze_categorical_mi(df, features, target, random_state=42, graph=True):
             y='Feature', 
             data=mi_df, 
             hue='Feature', 
-            palette='magma', 
+            palette='RdYlBu', 
             legend=False
         )
         
         plt.title(f'Mutual Information Scores (Target: {target})', fontsize=14)
         plt.xlabel('Information Gain / MI Score', fontsize=12)
         plt.ylabel('Features', fontsize=12)
+        plt.grid(axis='x', linestyle='--', alpha=0.7)
+        sns.despine(top=True, right=True)
         plt.tight_layout()
         plt.show()
     
