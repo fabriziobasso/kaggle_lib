@@ -365,3 +365,40 @@ def analyze_categorical_mi(df, features, target, random_state=42, graph=True):
         plt.show()
     
     return mi_df
+
+from sklearn.preprocessing import OrdinalEncoder
+
+# Encode Categorical Features:
+def encode_categorical_features(train_df, test_df, cat_features):
+    """
+    Fits an OrdinalEncoder on the training dataset and applies the 
+    transformation to both the training and test datasets.
+    
+    Parameters:
+    - train_df: The training DataFrame.
+    - test_df: The test DataFrame.
+    - cat_features: List of column names (strings) to encode.
+    
+    Returns:
+    - train_encoded: Encoded training DataFrame.
+    - test_encoded: Encoded test DataFrame.
+    - encoder: The fitted OrdinalEncoder object.
+    """
+    # 1. Create copies to avoid side effects on the original dataframes
+    train_encoded = train_df.copy()
+    test_encoded = test_df.copy()
+    
+    # 2. Initialize the encoder
+    # handle_unknown='use_encoded_value' prevents errors if the test set 
+    # contains a category not found in the training set.
+    encoder = OrdinalEncoder(
+        handle_unknown='use_encoded_value', 
+        unknown_value=-1
+    )
+    
+    # 3. Fit on train and transform both
+    # Ensure columns are cast to string to handle mixed types or NaNs gracefully
+    train_encoded[cat_features] = encoder.fit_transform(train_encoded[cat_features].astype(str))
+    test_encoded[cat_features] = encoder.transform(test_encoded[cat_features].astype(str))
+    
+    return train_encoded, test_encoded, encoder
