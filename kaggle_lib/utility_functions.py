@@ -5,7 +5,7 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.feature_selection import mutual_info_classif
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
 import math
 
 try: #Prevent the casting of an error message if the library is imported outside Kaggle/Colab
@@ -365,8 +365,6 @@ def analyze_categorical_mi(df, features, target, random_state=42, graph=True):
         plt.show()
     
     return mi_df
-
-from sklearn.preprocessing import OrdinalEncoder
 
 # Encode Categorical Features:
 def encode_categorical_features(train_df, test_df, cat_features):
