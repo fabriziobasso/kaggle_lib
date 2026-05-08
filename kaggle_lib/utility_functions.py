@@ -400,3 +400,61 @@ def encode_categorical_features(train_df, test_df, cat_features):
     test_encoded[cat_features] = encoder.transform(test_encoded[cat_features].astype(str))
     
     return train_encoded, test_encoded, encoder
+
+# Rel with cont fratures:
+def analyze_feature_relationships(df, features, target, problem_type='regression'):
+    """
+    Generates plots to visualize the relationship between features and a target variable.
+    Updated to comply with Seaborn v0.14.0 palette requirements.
+    
+    Parameters:
+    df (pd.DataFrame): The dataset containing features and target.
+    features (list): A list of column names (strings) to analyze.
+    target (str): The name of the target variable column.
+    problem_type (str): Either 'regression' or 'classification'.
+    """
+    
+    num_features = len(features)
+    num_cols = 2
+    num_rows = math.ceil(num_features / num_cols)
+    
+    sns.set_theme(style="whitegrid")
+    
+    # Create the figure and axes
+    fig, axes = plt.subplots(num_rows, num_cols, figsize=(12, 5 * num_rows))
+    
+    # Ensure axes is an array even if there is only one plot
+    if num_features == 1:
+        axes = [axes]
+    else:
+        axes = axes.flatten()
+    
+    for i, col in enumerate(features):
+        if problem_type.lower() == 'regression':
+            # Scatter plot remains the same as it doesn't typically use a palette this way
+            sns.scatterplot(data=df, x=col, y=target, ax=axes[i], color='teal')
+            axes[i].set_title(f'Regression: {col} vs {target}')
+            
+        elif problem_type.lower() == 'classification':
+            # FIX: Added hue=target and legend=False to address the FutureWarning
+            sns.boxplot(
+                data=df, 
+                x=target, 
+                y=col, 
+                ax=axes[i], 
+                hue=target, 
+                legend=False, 
+                palette='Set2'
+            )
+            axes[i].set_title(f'Classification: {col} by {target}')
+            
+        else:
+            print(f"Unknown problem type: {problem_type}.")
+            return
+
+    # Clean up empty subplots
+    for j in range(i + 1, len(axes)):
+        fig.delaxes(axes[j])
+        
+    plt.tight_layout()
+    plt.show()
