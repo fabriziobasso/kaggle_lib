@@ -458,3 +458,43 @@ def analyze_feature_relationships(df, features, target, problem_type='regression
         
     plt.tight_layout()
     plt.show()
+
+# Correlation pairplot
+
+def plot_feature_pairgrid(df, features, target, sample=1.0):
+    """
+    Creates a Seaborn pairplot to visualize relationships between features
+    and a target variable.
+
+    Parameters:
+    df (pd.DataFrame): The input dataset.
+    features (list): A list of strings representing the feature columns.
+    target (str): The column name to use for color mapping (hue).
+    """
+
+    # We combine features and target into one list to ensure the pairplot
+    # has access to the target variable for the 'hue' parameter.
+    plot_columns = features + [target]
+
+    # sample df
+    df_ = df.sample(frac=sample)
+
+    # Set the visual style
+    sns.set_theme(style="ticks")
+
+    # Generate the pairplot
+    # vars: limits the variables plotted to our list
+    # hue: colors the points based on the target categories
+    # corner: removes the redundant upper triangle of the grid
+    pair_grid = sns.pairplot(
+        df_[plot_columns],
+        vars=features,
+        hue=target,
+        corner=True,
+        palette='Set3'
+    )
+
+    # Add a title to the figure
+    pair_grid.fig.suptitle(f'Pairwise Relationship of Features (Hue: {target})', y=1.02)
+
+    plt.show()
