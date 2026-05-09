@@ -491,7 +491,7 @@ def plot_feature_pairgrid(df, features, target, sample=1.0):
         vars=features,
         hue=target,
         corner=True,
-        palette='Set3'
+        palette='Set2'
     )
 
     # Add a title to the figure
