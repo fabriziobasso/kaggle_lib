@@ -18,7 +18,7 @@ from sklearn.preprocessing import (FunctionTransformer,
                                     QuantileTransformer,
                                     RobustScaler,
                                     LabelEncoder,
-                                    OrdinalEncoder
+                                    OrdinalEncoder,
                                     StandardScaler,
                                     minmax_scale)
 
