@@ -498,3 +498,67 @@ def plot_feature_pairgrid(df, features, target, sample=1.0):
     pair_grid.fig.suptitle(f'Pairwise Relationship of Features (Hue: {target})', y=1.02)
 
     plt.show()
+
+# Visualize categorical features vs continous features with hue:
+
+def plot_categorical_distributions(df, cat_features, target, hue=None, palette='viridis', fig_width=12, row_height=5):
+    """
+    Visualizes the distribution of a numerical target across categorical features,
+    optionally split by a second categorical 'hue' feature.
+    
+    Parameters:
+    df (pd.DataFrame): The dataset.
+    cat_features (list): Categorical columns for the x-axis.
+    target (str): Numerical column for the y-axis.
+    hue (str, optional): Categorical column to split the boxplots (default: None).
+    palette (str): Color palette name.
+    fig_width (int): Width of the figure.
+    row_height (int): Height per row of plots.
+    """
+    
+    num_features = len(cat_features)
+    num_cols = 2
+    num_rows = math.ceil(num_features / num_cols)
+    
+    sns.set_theme(style="whitegrid")
+    
+    fig, axes = plt.subplots(
+        num_rows, 
+        num_cols, 
+        figsize=(fig_width, row_height * num_rows)
+    )
+    
+    # Standardize axes to a list for iteration
+    if num_features == 1:
+        axes = [axes]
+    else:
+        axes = axes.flatten()
+        
+    for i, col in enumerate(cat_features):
+        # Determine mapping: 
+        # If hue is provided, we use it for color and show the legend.
+        # If not, we use the x-axis variable for color to avoid warnings.
+        current_hue = hue if hue else col
+        show_legend = True if hue else False
+        
+        sns.boxplot(
+            data=df, 
+            x=col, 
+            y=target, 
+            hue=current_hue,
+            ax=axes[i], 
+            palette=palette,
+            legend=show_legend
+        )
+        
+        # Titles and Labels
+        title_suffix = f" (split by {hue})" if hue else ""
+        axes[i].set_title(f'{target} by {col}{title_suffix}', fontsize=12, fontweight='bold')
+        axes[i].tick_params(axis='x', rotation=45)
+
+    # Remove empty subplots
+    for j in range(i + 1, len(axes)):
+        fig.delaxes(axes[j])
+        
+    plt.tight_layout()
+    plt.show()
