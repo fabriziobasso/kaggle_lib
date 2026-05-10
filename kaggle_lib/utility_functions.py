@@ -5,8 +5,24 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.feature_selection import mutual_info_classif
-from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
 import math
+
+
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import (FunctionTransformer,    
+                                    MaxAbsScaler,
+                                    MinMaxScaler,
+                                    Normalizer,
+                                    PowerTransformer,
+                                    QuantileTransformer,
+                                    RobustScaler,
+                                    LabelEncoder,
+                                    OrdinalEncoder
+                                    StandardScaler,
+                                    minmax_scale)
+
+from sklearn.base import clone
 
 try: #Prevent the casting of an error message if the library is imported outside Kaggle/Colab
     from google.colab import drive
@@ -562,3 +578,55 @@ def plot_categorical_distributions(df, cat_features, target, hue=None, palette='
         
     plt.tight_layout()
     plt.show()
+
+# Create pipeline to transform data:
+def build_preprocessing_pipeline(transformation_dict):
+    """
+    Constructs an unfitted sklearn ColumnTransformer pipeline based on a 
+    dictionary of features and their corresponding transformation steps.
+    
+    Parameters:
+    transformation_dict (dict): Keys are feature names (str), values are lists 
+                                of transformations (functions or sklearn objects).
+                                
+    Returns:
+    sklearn.compose.ColumnTransformer: The modular pipeline object.
+    """
+    
+    transformers = []
+    
+    # Iterate through the dictionary to build sub-pipelines for each feature
+    for feature, steps in transformation_dict.items():
+        pipeline_steps = []
+        
+        for i, step in enumerate(steps):
+            # Step detection: If it's a function (np.log1p), wrap in FunctionTransformer
+            if callable(step) and not hasattr(step, "fit_transform"):
+                transformer = FunctionTransformer(step, validate=False)
+            else:
+                # If it's a class type (e.g., StandardScaler), instantiate it
+                # If it's an instance, clone it to ensure a fresh state
+                transformer = step() if isinstance(step, type) else clone(step)
+            
+            # Label each step numerically (step_0, step_1, etc.)
+            pipeline_steps.append((f'step_{i}', transformer))
+        
+        # Create a Pipeline for this specific column
+        feature_pipeline = Pipeline(pipeline_steps)
+        
+        # Add to the list of transformers for ColumnTransformer
+        # Format: (name, pipeline_object, column_name)
+        transformers.append((f'pipe_{feature}', feature_pipeline, [feature]))
+    
+    # Assemble the final ColumnTransformer
+    # remainder='passthrough' keeps columns not defined in the dictionary
+    preprocessing_pipeline = ColumnTransformer(
+        transformers=transformers, 
+        remainder='passthrough',
+        verbose_feature_names_out=False
+    )
+    
+    # Ensure the output is a pandas DataFrame
+    preprocessing_pipeline.set_output(transform="pandas")
+    
+    return preprocessing_pipeline
