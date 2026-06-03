@@ -7,6 +7,7 @@ import seaborn as sns
 from sklearn.feature_selection import mutual_info_classif
 from itertools import combinations
 import math
+from tqdm import tqdm
 
 
 from sklearn.compose import ColumnTransformer
