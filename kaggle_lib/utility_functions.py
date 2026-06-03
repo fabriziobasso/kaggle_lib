@@ -5,6 +5,7 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.feature_selection import mutual_info_classif
+from itertools import combinations
 import math
 
 
@@ -630,3 +631,56 @@ def build_preprocessing_pipeline(transformation_dict):
     preprocessing_pipeline.set_output(transform="pandas")
     
     return preprocessing_pipeline
+
+## Feature Engineering - Interaction Function for exploration
+def rank_feature_interactions(df, target_feat, feature_list, problem_type='regression'):
+    """
+    Evaluates pairwise feature combinations and returns a ranked summary
+    while avoiding DataFrame fragmentation.
+
+    Parameters:
+    df (pd.DataFrame): The source dataset.
+    target_col (str): The column name of the target variable.
+    feature_list (list): The list of features to combine.
+    problem_type (str): 'regression' or 'classification'.
+
+    Returns:
+    pd.DataFrame: Ranked MI scores for each tested combination.
+    """
+
+    y = target_feat.copy()
+    epsilon = 1e-9  # Handling values near zero
+
+    # We use a dictionary to store new features to avoid fragmentation
+    feature_dict = {}
+
+    # 1. Generate all pairwise combinations
+    for col_a, col_b in tqdm(combinations(feature_list, 2)):
+        a, b = df[col_a], df[col_b]
+
+        # Store each operation as a Series in our dictionary
+        feature_dict[f"{col_a} + {col_b}"] = a + b
+        feature_dict[f"{col_a} - {col_b}"] = a - b
+        feature_dict[f"{col_a} * {col_b}"] = a * b
+        feature_dict[f"{col_a} / {col_b}"] = a / (b + epsilon)
+        feature_dict[f"{col_b} / {col_a}"] = b / (a + epsilon)
+
+    # 2. Convert the dictionary to a DataFrame all at once
+    # This is the key step to prevent PerformanceWarning
+    temp_features = pd.concat(feature_dict, axis=1)
+
+    # 3. Calculate Mutual Information
+    if problem_type.lower() == 'regression':
+        mi_scores = mutual_info_regression(temp_features, y)
+    else:
+        mi_scores = mutual_info_classif(temp_features, y)
+
+    # 4. Create and sort the results DataFrame
+    mi_report = pd.DataFrame({
+        'Mutual_Information_Ratio': mi_scores
+    }, index=temp_features.columns)
+
+    # Sort from greatest to smallest
+    mi_report = mi_report.sort_values(by='Mutual_Information_Ratio', ascending=False)
+
+    return mi_report
