@@ -24,6 +24,10 @@ from sklearn.preprocessing import (FunctionTransformer,
                                     StandardScaler,
                                     minmax_scale)
 
+from sklearn.feature_selection import f_classif, mutual_info_classif, f_regression, mutual_info_regression
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.linear_model import LogisticRegression, Lasso
+
 from sklearn.base import clone
 
 try: #Prevent the casting of an error message if the library is imported outside Kaggle/Colab
@@ -685,3 +689,158 @@ def rank_feature_interactions(df, target_feat, feature_list, problem_type='regre
     mi_report = mi_report.sort_values(by='Mutual_Information_Ratio', ascending=False)
 
     return mi_report
+  
+############################################################################################################
+################################## FEATURE SELECTION FUNCTIONS #############################################
+############################################################################################################
+
+def _apply_correlation_post_filter(df_ranked, X, top_n, threshold):
+    """
+    Evaluates the top N features for multicollinearity. 
+    If two features are highly correlated, the one with the worse consensus rank is dropped.
+    """
+    # Isolate the top N features based on consensus rank
+    top_df = df_ranked.head(top_n).copy()
+    top_features = top_df['Feature'].tolist()
+    
+    # Calculate the absolute correlation matrix for only these top features
+    corr_matrix = X[top_features].corr().abs()
+    
+    # Isolate the upper triangle to avoid checking pairs twice or checking self-correlation
+    upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
+    
+    features_to_drop = set()
+    
+    for feature_col in upper.columns:
+        # Find any row features correlated with this column feature above the threshold
+        correlated_rows = upper.index[upper[feature_col] > threshold].tolist()
+        
+        for feature_row in correlated_rows:
+            # Retrieve their consensus ranks
+            rank_col = top_df.loc[top_df['Feature'] == feature_col, 'Consensus_Rank'].values[0]
+            rank_row = top_df.loc[top_df['Feature'] == feature_row, 'Consensus_Rank'].values[0]
+            
+            # The feature with the higher numerical value (worse rank) gets marked for deletion
+            if rank_col > rank_row:
+                features_to_drop.add(feature_col)
+            else:
+                features_to_drop.add(feature_row)
+                
+    # Filter the dataframe to remove the redundant features
+    final_df = top_df[~top_df['Feature'].isin(features_to_drop)].reset_index(drop=True)
+    
+    print(f"Post-Filter: Evaluated top {top_n} features. Dropped {len(features_to_drop)} redundant features.")
+    if features_to_drop:
+        print(f"Dropped features: {list(features_to_drop)}")
+        
+    return final_df
+
+
+def select_features_classification(X, y, top_n=20, corr_threshold=0.85):
+    """
+    Classification feature selection with embedded correlation post-filtering.
+    """
+    print("Running Classification Feature Selection...")
+    
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    
+    # The Four Pillars
+    f_stat, _ = f_classif(X, y)
+    mi = mutual_info_classif(X, y)
+    
+    rf = RandomForestClassifier(n_estimators=50, max_depth=5, random_state=42, n_jobs=-1)
+    rf.fit(X, y)
+    rf_imp = rf.feature_importances_
+    
+    lr = LogisticRegression(penalty='l1', solver='liblinear', random_state=42, max_iter=1000)
+    lr.fit(X_scaled, y)
+    l1_imp = np.abs(lr.coef_).mean(axis=0) if len(lr.classes_) > 2 else np.abs(lr.coef_[0])
+    
+    # Compile and Rank
+    df = pd.DataFrame({
+        'Feature': X.columns,
+        'F_Score': f_stat,
+        'MI_Score': mi,
+        'RF_Importance': rf_imp,
+        'L1_Importance': l1_imp
+    })
+    
+    for col in ['F_Score', 'MI_Score', 'RF_Importance', 'L1_Importance']:
+        df[f'Rank_{col.split("_")[0]}'] = df[col].rank(ascending=False)
+        
+    rank_cols = [c for c in df.columns if c.startswith('Rank_')]
+    df['Consensus_Rank'] = df[rank_cols].mean(axis=1)
+    df = df.sort_values('Consensus_Rank').reset_index(drop=True)
+    
+    # Apply Correlation Post-Filter
+    final_df = _apply_correlation_post_filter(df, X, top_n=top_n, threshold=corr_threshold)
+    
+    _plot_consensus(final_df, "Classification")
+    return final_df
+
+
+def select_features_regression(X, y, top_n=20, corr_threshold=0.85):
+    """
+    Regression feature selection with embedded correlation post-filtering.
+    """
+    print("Running Regression Feature Selection...")
+    
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    
+    # The Four Pillars
+    f_stat, _ = f_regression(X, y)
+    mi = mutual_info_regression(X, y)
+    
+    rf = RandomForestRegressor(n_estimators=50, max_depth=5, random_state=42, n_jobs=-1)
+    rf.fit(X, y)
+    rf_imp = rf.feature_importances_
+    
+    lasso = Lasso(alpha=0.01, random_state=42)
+    lasso.fit(X_scaled, y)
+    l1_imp = np.abs(lasso.coef_)
+    
+    # Compile and Rank
+    df = pd.DataFrame({
+        'Feature': X.columns,
+        'F_Score': f_stat,
+        'MI_Score': mi,
+        'RF_Importance': rf_imp,
+        'L1_Importance': l1_imp
+    })
+    
+    for col in ['F_Score', 'MI_Score', 'RF_Importance', 'L1_Importance']:
+        df[f'Rank_{col.split("_")[0]}'] = df[col].rank(ascending=False)
+        
+    rank_cols = [c for c in df.columns if c.startswith('Rank_')]
+    df['Consensus_Rank'] = df[rank_cols].mean(axis=1)
+    df = df.sort_values('Consensus_Rank').reset_index(drop=True)
+    
+    # Apply Correlation Post-Filter
+    final_df = _apply_correlation_post_filter(df, X, top_n=top_n, threshold=corr_threshold)
+    
+    _plot_consensus(final_df, "Regression")
+    return final_df
+
+
+def _plot_consensus(df, task_type):
+    """Helper function to plot the post-filtered results."""
+    plt.figure(figsize=(10, 8))
+    
+    sns.barplot(
+        data=df, 
+        x='Consensus_Rank', 
+        y='Feature', 
+        hue='Feature',
+        palette='viridis', 
+        legend=False
+    )
+    
+    plt.title(f'Top Uncorrelated Features by Consensus Rank ({task_type})', fontsize=14)
+    plt.xlabel('Average Rank Across 4 Methods (Lower = More Significant)', fontsize=12)
+    plt.ylabel('Feature', fontsize=12)
+    plt.grid(axis='x', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    plt.show()
+
