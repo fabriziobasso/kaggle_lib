@@ -844,3 +844,59 @@ def _plot_consensus(df, task_type):
     plt.tight_layout()
     plt.show()
 
+
+
+###############################################################################
+######################## Graph and plot functions #############################
+###############################################################################
+
+def plot_streamlined_histogram(data, feature_name, bins='auto', color='steelblue'):
+    """
+    Plots a highly streamlined univariate histogram for a specific feature,
+    minimizing chart junk while retaining a dotted horizontal grid.
+
+    Parameters:
+    - data: pandas DataFrame containing the dataset.
+    - feature_name: str, the name of the column to plot.
+    - bins: int or str, number of bins or binning strategy (default 'auto').
+    - color: str, hex code or name for the bar color.
+    """
+    # Initialize the figure
+    fig, ax = plt.subplots(figsize=(9, 5))
+
+    # Plot the histogram with thin white edges for visual separation
+    sns.histplot(
+        data=data,
+        x=feature_name,
+        bins=bins,
+        color=color,
+        edgecolor='white',
+        alpha=0.85,
+        ax=ax
+    )
+
+    # 1. Streamline Axes: Remove top, right, and left spines entirely
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+
+    # Keep the bottom spine for grounding, but soften its color
+    ax.spines['bottom'].set_color('#cccccc')
+
+    # 2. Clean Ticks: Remove y-axis tick lines (keep the numbers)
+    ax.tick_params(axis='y', length=0)
+    ax.tick_params(axis='x', color='#cccccc')
+
+    # 3. Handle the Grid: Add horizontal dotted grid lines
+    # Setting zorder/axisbelow ensures the grid stays *behind* the histogram bars
+    ax.grid(axis='y', linestyle=':', color='gray', alpha=0.7)
+    ax.set_axisbelow(True)
+
+    # 4. Clean Labels and Title
+    plt.title(f'Distribution of {feature_name}', fontsize=14, pad=15, loc='left', fontweight='bold', color='#333333')
+    plt.xlabel(feature_name, fontsize=11, labelpad=10, color='#555555')
+    plt.ylabel('Frequency', fontsize=11, labelpad=10, color='#555555')
+
+    # Render
+    plt.tight_layout()
+    plt.show()
