@@ -28,6 +28,10 @@ from sklearn.feature_selection import f_classif, mutual_info_classif, f_regressi
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LogisticRegression, Lasso
 
+from sklearn.impute import SimpleImputer
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import IterativeImputer
+
 from sklearn.base import clone
 
 try: #Prevent the casting of an error message if the library is imported outside Kaggle/Colab
@@ -900,3 +904,92 @@ def plot_streamlined_histogram(data, feature_name, bins='auto', color='steelblue
     # Render
     plt.tight_layout()
     plt.show()
+
+
+###############################################################################
+########################### Imputer functions #################################
+###############################################################################
+
+def impute_iterative(df: pd.DataFrame, 
+                     target_col: str = None,
+                     max_iter: int = 10, 
+                     random_state: int = 42, 
+                     estimator = None) -> pd.DataFrame:
+    """
+    Fills NaN values using IterativeImputer while ignoring the target column.
+    
+    Parameters:
+    - df: Input pandas DataFrame
+    - target_col: Name of the target feature to exclude from imputation
+    - max_iter: Maximum number of imputation rounds
+    - random_state: Seed for reproducibility
+    - estimator: The machine learning model used to predict missing values 
+    """
+    df_imputed = df.copy()
+    
+    # Isolate and remove the target column if provided
+    target_series = None
+    if target_col and target_col in df_imputed.columns:
+        target_series = df_imputed.pop(target_col)
+    
+    num_cols = df_imputed.select_dtypes(include=['number']).columns
+    cat_cols = df_imputed.select_dtypes(exclude=['number']).columns
+    
+    if len(num_cols) > 0:
+        imputer = IterativeImputer(estimator=estimator, 
+                                   max_iter=max_iter, 
+                                   random_state=random_state)
+        df_imputed[num_cols] = imputer.fit_transform(df_imputed[num_cols])
+        
+    # Check if categorical columns still have missing data
+    if len(cat_cols) > 0 and df_imputed[cat_cols].isna().any().any():
+        print(f"Warning: Categorical columns {list(cat_cols)} still contain NaNs. "
+              "Encode them to numeric before using IterativeImputer to fill them.")
+              
+    # Reattach the target column unmodified
+    if target_series is not None:
+        df_imputed[target_col] = target_series
+        
+    return df_imputed
+
+def impute_simple(df: pd.DataFrame, 
+                  target_col: str = None,
+                  num_strategy: str = 'mean', 
+                  cat_strategy: str = 'most_frequent', 
+                  cat_fill_value: str = 'Missing') -> pd.DataFrame:
+    """
+    Fills NaN values using SimpleImputer while ignoring the target column.
+    
+    Parameters:
+    - df: Input pandas DataFrame
+    - target_col: Name of the target feature to exclude from imputation
+    - num_strategy: Strategy for numeric columns ('mean', 'median', 'most_frequent', 'constant')
+    - cat_strategy: Strategy for categorical columns ('most_frequent', 'constant')
+    - cat_fill_value: The filler value if cat_strategy='constant'
+    """
+    df_imputed = df.copy()
+    
+    # Isolate and remove the target column if provided
+    target_series = None
+    if target_col and target_col in df_imputed.columns:
+        target_series = df_imputed.pop(target_col)
+    
+    # Identify numeric and non-numeric (categorical) columns
+    num_cols = df_imputed.select_dtypes(include=['number']).columns
+    cat_cols = df_imputed.select_dtypes(exclude=['number']).columns
+    
+    # Impute numeric columns
+    if len(num_cols) > 0:
+        num_imputer = SimpleImputer(strategy=num_strategy)
+        df_imputed[num_cols] = num_imputer.fit_transform(df_imputed[num_cols])
+        
+    # Impute categorical columns
+    if len(cat_cols) > 0:
+        cat_imputer = SimpleImputer(strategy=cat_strategy, fill_value=cat_fill_value)
+        df_imputed[cat_cols] = cat_imputer.fit_transform(df_imputed[cat_cols])
+        
+    # Reattach the target column unmodified
+    if target_series is not None:
+        df_imputed[target_col] = target_series
+        
+    return df_imputed
