@@ -1009,3 +1009,45 @@ def impute_simple(df: pd.DataFrame,
         df_imputed[target_col] = target_series
         
     return df_imputed
+
+from sklearn.impute import KNNImputer
+
+def impute_knn(df: pd.DataFrame, 
+               target_col: str = None,
+               n_neighbors: int = 5, 
+               weights: str = 'uniform') -> pd.DataFrame:
+    """
+    Fills NaN values using KNNImputer while ignoring the target column.
+    
+    Parameters:
+    - df: Input pandas DataFrame
+    - target_col: Name of the target feature to exclude from imputation
+    - n_neighbors: Number of neighboring samples to use for imputation
+    - weights: Weight function used in prediction ('uniform' or 'distance')
+    """
+    df_imputed = df.copy()
+    
+    # Isolate and remove the target column if provided
+    target_series = None
+    if target_col and target_col in df_imputed.columns:
+        target_series = df_imputed.pop(target_col)
+    
+    # Identify numeric and non-numeric (categorical) columns
+    num_cols = df_imputed.select_dtypes(include=['number']).columns
+    cat_cols = df_imputed.select_dtypes(exclude=['number']).columns
+    
+    # Impute numeric columns
+    if len(num_cols) > 0:
+        imputer = KNNImputer(n_neighbors=n_neighbors, weights=weights)
+        df_imputed[num_cols] = imputer.fit_transform(df_imputed[num_cols])
+        
+    # Check if categorical columns still have missing data
+    if len(cat_cols) > 0 and df_imputed[cat_cols].isna().any().any():
+        print(f"Warning: Categorical columns {list(cat_cols)} still contain NaNs. "
+              "KNNImputer requires numeric data; encode categoricals before imputation.")
+              
+    # Reattach the target column unmodified
+    if target_series is not None:
+        df_imputed[target_col] = target_series
+        
+    return df_imputed
