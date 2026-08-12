@@ -928,7 +928,8 @@ def impute_iterative(df: pd.DataFrame,
                      target_col: str = None,
                      max_iter: int = 10, 
                      random_state: int = 42, 
-                     estimator = None) -> pd.DataFrame:
+                     estimator = None,
+                     imputation_order = 'ascending') -> pd.DataFrame:
     """
     Fills NaN values using IterativeImputer while ignoring the target column.
     
@@ -952,7 +953,8 @@ def impute_iterative(df: pd.DataFrame,
     if len(num_cols) > 0:
         imputer = IterativeImputer(estimator=estimator, 
                                    max_iter=max_iter, 
-                                   random_state=random_state)
+                                   random_state=random_state,
+                                   imputation_order=imputation_order)
         df_imputed[num_cols] = imputer.fit_transform(df_imputed[num_cols])
         
     # Check if categorical columns still have missing data
