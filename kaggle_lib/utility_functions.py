@@ -130,6 +130,20 @@ def import_files(original_data:str="", datatypes: dict={}, mute=False,
   else:
     return train, test, submission
 
+def concat_train_test(train_df, test_df):
+    """
+    Concatenates training and test dataframes and returns the merged dataframe 
+    along with the indices to split them back later.
+    """
+    # Concatenate while ignoring the original indices to create a clean, continuous index
+    merged_df = pd.concat([train_df, test_df], axis=0, ignore_index=True)
+    
+    # Create index arrays based on the lengths of the original dataframes
+    train_idx = merged_df.index[:len(train_df)]
+    test_idx = merged_df.index[len(train_df):]
+    
+    return merged_df, train_idx, test_idx
+
 def concatenate_train_original(train, orig_data):
   """
   Concatenate the train and original data.
