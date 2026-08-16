@@ -30,7 +30,7 @@ from sklearn.linear_model import LogisticRegression, Lasso
 
 from sklearn.impute import SimpleImputer
 from sklearn.experimental import enable_iterative_imputer
-from sklearn.impute import IterativeImputer
+from sklearn.impute import IterativeImputer, KNNImputer
 
 from sklearn.base import clone
 
@@ -1010,8 +1010,6 @@ def impute_simple(df: pd.DataFrame,
         
     return df_imputed
 
-from sklearn.impute import KNNImputer
-
 def impute_knn(df: pd.DataFrame, 
                target_col: str = None,
                n_neighbors: int = 5, 
@@ -1051,3 +1049,26 @@ def impute_knn(df: pd.DataFrame,
         df_imputed[target_col] = target_series
         
     return df_imputed
+
+def add_missing_indicators(df: pd.DataFrame, target_col: str = None, suffix: str = "is_missing") -> pd.DataFrame:
+    """
+    Adds integer indicator columns (1 for missing, 0 for present) 
+    for any feature that contains missing values.
+    
+    Parameters:
+    - df: Input pandas DataFrame
+    - target_col: Name of the target feature to exclude from the indicator check
+    """
+    df_out = df.copy()
+    
+    # Determine which columns to evaluate (exclude target)
+    cols_to_check = [col for col in df_out.columns if col != target_col]
+    
+    # Iterate through columns and add indicators only where NaNs exist
+    for col in cols_to_check:
+        if df_out[col].isna().any():
+            indicator_name = f"{col}_{suffix}"
+            # .astype(int) converts True/False to 1/0 for easier ML ingestion
+            df_out[indicator_name] = df_out[col].isna().astype(int)
+            
+    return df_out
